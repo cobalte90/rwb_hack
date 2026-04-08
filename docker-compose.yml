@@ -1,0 +1,25 @@
+services:
+  transport-planner:
+    build: .
+    image: wildhack-slot-orchestrator:latest
+    container_name: wildhack-transport-planner
+    restart: unless-stopped
+    environment:
+      APP_NAME: ${APP_NAME:-wildhack-transport-planner}
+      APP_ENV: ${APP_ENV:-prod}
+      APP_HOST: ${APP_HOST:-0.0.0.0}
+      APP_PORT: ${APP_PORT:-8000}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DEFAULT_MODEL_PROFILE: ${DEFAULT_MODEL_PROFILE:-latest_lb}
+      ARTIFACTS_DIR: /app/artifacts
+      INFO_DIR: ${INFO_DIR:-/app/info_for_codex}
+      ARTIFACTS_GDRIVE_URL: ${ARTIFACTS_GDRIVE_URL:-https://drive.google.com/drive/folders/1eCMotnRsqOYSVd-BhQEX-ZgewIeNJwwn?usp=sharing}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./artifacts:/app/artifacts
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 5

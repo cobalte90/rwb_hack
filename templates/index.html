@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div
+    class="app-shell"
+    data-default-mode="{{ default_mode }}"
+    data-truck-image="{{ url_for('static', path='img/wb_truck.png') }}"
+>
+    <section class="kpi-strip">
+        <article class="kpi-card">
+            <span class="kpi-label">Критических маршрутов</span>
+            <strong id="kpi-critical-routes">—</strong>
+        </article>
+        <article class="kpi-card">
+            <span class="kpi-label">Машин к вызову</span>
+            <strong id="kpi-trucks-now">—</strong>
+        </article>
+        <article class="kpi-card">
+            <span class="kpi-label">Средняя нагрузка</span>
+            <strong id="kpi-avg-pressure">—</strong>
+        </article>
+        <article class="kpi-card">
+            <span class="kpi-label">Пиковое окно</span>
+            <strong id="kpi-peak-window">—</strong>
+        </article>
+        <article class="kpi-card">
+            <span class="kpi-label">Режим сервиса</span>
+            <strong id="kpi-service-mode">—</strong>
+        </article>
+        <article class="kpi-card">
+            <span class="kpi-label">Риск SLA</span>
+            <strong id="kpi-sla-risk">—</strong>
+        </article>
+    </section>
+
+    <main class="main-layout">
+        <aside class="panel control-panel">
+            <div class="panel-title">Панель управления</div>
+
+            <section class="control-section">
+                <div class="section-label">Сценарий</div>
+                <div class="scenario-box">
+                    <strong>Прогноз и решение по слотам склада</strong>
+                    <p>Загрузите демо, файл или JSON-запрос и запустите расчёт.</p>
+                </div>
+            </section>
+
+            <section class="control-section">
+                <div class="section-label">Режим сервиса</div>
+                <select id="service-mode">
+                    <option value="cost_saving">Экономия</option>
+                    <option value="balanced" selected>Баланс</option>
+                    <option value="sla_first">Приоритет SLA</option>
+                </select>
+            </section>
+
+            <section class="control-section">
+                <div class="section-label">Управление</div>
+                <div class="actions">
+                    <button id="load-demo-btn" class="btn btn-primary" type="button">Загрузить демо</button>
+                    <button id="run-manual-btn" class="btn btn-secondary" type="button">Запустить расчёт</button>
+                </div>
+                <label class="file-label">
+                    <span class="btn btn-ghost">Загрузить файл</span>
+                    <input id="payload-file" type="file" accept=".json,.csv,.parquet,application/json,text/csv">
+                </label>
+            </section>
+
+            <section class="control-section">
+                <div class="section-label">Сводка входа</div>
+                <div class="input-summary">
+                    <div class="summary-row"><span>Источник</span><strong id="input-source">Демо</strong></div>
+                    <div class="summary-row"><span>Файл</span><strong id="input-file-name">—</strong></div>
+                    <div class="summary-row"><span>Маршрутов</span><strong id="input-routes">—</strong></div>
+                    <div class="summary-row"><span>Записей</span><strong id="input-records">—</strong></div>
+                    <div class="summary-row"><span>Горизонт</span><strong id="input-horizon">10 шагов</strong></div>
+                </div>
+            </section>
+
+            <details class="advanced-box">
+                <summary>Расширенный ввод</summary>
+                <label class="field-label" for="payload-json">JSON-запрос</label>
+                <textarea id="payload-json" spellcheck="false"></textarea>
+                <p class="mini-note">Поддерживаются JSON, CSV и Parquet. Если служебных параметров нет, сервис добавит их автоматически.</p>
+            </details>
+
+            <div id="progress-box" class="progress-box hidden" aria-live="polite">
+                <div class="progress-head">
+                    <strong id="progress-status">Подготовка расчёта...</strong>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="progress-track">
+                    <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+                </div>
+                <div class="progress-stages">
+                    <span id="progress-stage-upload" class="progress-stage">Загрузка</span>
+                    <span id="progress-stage-validate" class="progress-stage">Проверка</span>
+                    <span id="progress-stage-forecast" class="progress-stage">Прогноз</span>
+                    <span id="progress-stage-decision" class="progress-stage">Решение</span>
+                    <span id="progress-stage-ready" class="progress-stage">Готово</span>
+                </div>
+            </div>
+
+            <div id="loading-box" class="notice notice-loading hidden">Идёт расчёт сценария...</div>
+            <div id="error-box" class="notice notice-error hidden"></div>
+        </aside>
+
+        <section class="panel hero-panel">
+            <div class="panel-head">
+                <div>
+                    <div class="panel-title">Приоритетное решение</div>
+                    <p class="panel-subtitle">Главный маршрут и причина, почему действие нужно сейчас.</p>
+                </div>
+            </div>
+            <div id="focus-box" class="focus-box muted">
+                После запуска расчёта здесь появится главный маршрут и решение по нему.
+            </div>
+        </section>
+
+        <aside class="panel queue-panel">
+            <div class="panel-head">
+                <div>
+                    <div class="panel-title">Очередь действий</div>
+                    <p class="panel-subtitle">Что делать по маршрутам прямо сейчас.</p>
+                </div>
+            </div>
+            <div id="queue-cards" class="queue-list">
+                <div class="queue-card queue-card-empty">После расчёта здесь появятся действия по маршрутам.</div>
+            </div>
+        </aside>
+    </main>
+
+    <section class="analytics-layout">
+        <section class="panel routes-panel">
+            <div class="panel-head panel-head-inline">
+                <div>
+                    <div class="panel-title">Все маршруты</div>
+                    <p class="panel-subtitle">Сортировка и фильтрация по действиям и риску.</p>
+                </div>
+                <div class="table-controls">
+                    <select id="routes-filter">
+                        <option value="all">Все действия</option>
+                        <option value="call_now">Только вызов</option>
+                        <option value="monitor">Только наблюдение</option>
+                        <option value="hold">Только удержание</option>
+                    </select>
+                    <select id="routes-sort">
+                        <option value="priority">Сначала важные</option>
+                        <option value="pressure">По нагрузке</option>
+                        <option value="trucks">По числу машин</option>
+                        <option value="route">По номеру маршрута</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Маршрут</th>
+                            <th>Склад</th>
+                            <th>Действие</th>
+                            <th>Нагрузка</th>
+                            <th>Объём</th>
+                            <th>Машины</th>
+                            <th>Срочность</th>
+                            <th>Причина</th>
+                            <th>Открыть</th>
+                        </tr>
+                    </thead>
+                    <tbody id="decision-table-body">
+                        <tr>
+                            <td colspan="9" class="empty-cell">Сначала загрузите демо, файл или JSON-запрос.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <aside class="panel route-focus-panel" id="route-focus-panel">
+            <div class="panel-head">
+                <div>
+                    <div class="panel-title">Маршрут в фокусе</div>
+                    <p class="panel-subtitle">Детали выбранного маршрута и причины решения.</p>
+                </div>
+            </div>
+            <div id="route-details" class="muted">Выберите маршрут из таблицы или очереди действий.</div>
+        </aside>
+    </section>
+
+    <section class="analytics-strip">
+        <article class="panel analytics-card">
+            <span class="analytics-label">Ожидаемая утилизация</span>
+            <strong id="analytics-utilization">—</strong>
+        </article>
+        <article class="panel analytics-card">
+            <span class="analytics-label">Риск недовызова</span>
+            <strong id="analytics-under-call">—</strong>
+        </article>
+        <article class="panel analytics-card">
+            <span class="analytics-label">Риск перевызова</span>
+            <strong id="analytics-over-call">—</strong>
+        </article>
+        <article class="panel analytics-card">
+            <span class="analytics-label">Стабильность решений</span>
+            <strong id="analytics-stability">—</strong>
+        </article>
+    </section>
+
+    <section class="panel insights-panel">
+        <div class="panel-head">
+            <div>
+                <div class="panel-title">Бизнес-инсайты</div>
+                <p class="panel-subtitle">Короткие выводы по рискам и ожидаемой нагрузке.</p>
+            </div>
+        </div>
+        <ul id="insights-list" class="notes-list">
+            <li>После расчёта здесь появятся ключевые выводы по рискам и нагрузке.</li>
+        </ul>
+    </section>
+
+    <section class="panel developer-panel">
+        <details>
+            <summary>Технические детали</summary>
+            <div class="developer-meta">
+                <div class="artifact-line">
+                    <span>Отчёт об артефактах</span>
+                    <strong id="artifact-report">—</strong>
+                </div>
+            </div>
+            <pre id="raw-response" class="json-box">{}</pre>
+        </details>
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{
+  "default_profile": "latest_lb",
+  "profiles": {
+    "latest_lb": {
+      "components": [
+        "chronos2_real_or_proxy",
+        "gru",
+        "tsmixerx_real_or_proxy",
+        "groupwise_blend"
+      ],
+      "required_files": [
+        "models/gru/gru.pt",
+        "models/gru/gru_config.json",
+        "configs/blend_config.json"
+      ]
+    },
+    "local_fallback": {
+      "components": [
+        "gru",
+        "tft_proxy",
+        "optuna_optional"
+      ],
+      "required_files": [
+        "models/gru/gru.pt",
+        "models/gru/gru_config.json",
+        "models/tft_lite/tft_lite.npz",
+        "models/tft_lite/tft_lite_meta.json"
+      ]
+    }
+  }
+}

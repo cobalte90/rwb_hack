@@ -1,0 +1,55 @@
+default_service_mode: balanced
+truck_capacity: 120.0
+min_call_threshold: 45.0
+safety_buffer_base: 0.08
+high_volatility_threshold: 1.0
+high_volatility_multiplier: 0.06
+friday_peak_multiplier: 0.04
+near_term_peak_threshold: 95.0
+near_term_peak_multiplier: 0.05
+lead_time_steps: 1
+priority_threshold_low: 55.0
+priority_threshold_high: 110.0
+pressure:
+  horizon_focus_steps: 4
+  peak_immediacy_steps: 2
+  disagreement_scale: 0.35
+  pressure_thresholds:
+    medium: 0.38
+    high: 0.58
+    critical: 0.78
+  weights:
+    near_term_peak: 0.34
+    peak_proximity: 0.22
+    route_volatility: 0.16
+    model_disagreement: 0.12
+    friday_regime: 0.10
+    service_mode: 0.06
+action:
+  monitor_threshold: 0.40
+  call_now_threshold: 0.72
+  critical_call_threshold: 0.82
+  monitor_peak_threshold: 55.0
+  minimum_dispatch_trucks: 1
+service_modes:
+  cost_saving:
+    pressure_bias: -0.06
+    safety_buffer_delta: -0.03
+    call_now_delta: 0.05
+    monitor_delta: 0.03
+    truck_buffer_delta: -0.03
+    urgency_bias: -0.08
+  balanced:
+    pressure_bias: 0.00
+    safety_buffer_delta: 0.00
+    call_now_delta: 0.00
+    monitor_delta: 0.00
+    truck_buffer_delta: 0.00
+    urgency_bias: 0.00
+  sla_first:
+    pressure_bias: 0.08
+    safety_buffer_delta: 0.04
+    call_now_delta: -0.05
+    monitor_delta: -0.03
+    truck_buffer_delta: 0.05
+    urgency_bias: 0.08

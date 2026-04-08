@@ -1,0 +1,162 @@
+{
+  "source_directory": "C:\\Users\\\u0421\u0442\u0435\u043f\u0430\u043d\\Desktop\\wb_hack\\info_for_codex",
+  "leaderboard_reference": "artifacts_timexer/blend_best_timexer_main.csv",
+  "important_files": {
+    "notebook": "info_for_codex/coding.ipynb",
+    "train": "info_for_codex/data/train.parquet",
+    "test": "info_for_codex/data/test.parquet",
+    "gru_model": "info_for_codex/artifacts_strong_stack/models/gru.pt",
+    "timexer_submission": "info_for_codex/artifacts_timexer/preds/submission_timexer.csv",
+    "tsmixerx_runtime": "artifacts/models/tsmixerx",
+    "chronos_reference": "info_for_codex/blend_best_chronos_groupwise_main.csv"
+  },
+  "equivalences": {
+    "archive_last_best_equals_submission_stack_blend_with_direct": true,
+    "submission_chronos2_equals_submission_chronos2_component": true
+  },
+  "runtime_anchor_proxy": {
+    "weights": {
+      "g1": 0.65,
+      "g2": 0.65,
+      "g3": 0.65
+    },
+    "oof_metric": 0.16916065460028792,
+    "proxy_vs_reference_mae": 4.011120267391922,
+    "proxy_vs_reference_max_abs": 94.02617692749942,
+    "proxy_vs_reference_corr": 0.9946448207278527
+  },
+  "proxy_models": {
+    "chronos_proxy": {
+      "1": {
+        "mae": 5.006354243622129,
+        "rmse": 9.566878202919764
+      },
+      "2": {
+        "mae": 6.742723546063369,
+        "rmse": 12.915788394757076
+      },
+      "3": {
+        "mae": 7.727105447912113,
+        "rmse": 13.963566136305744
+      },
+      "4": {
+        "mae": 8.025558807766643,
+        "rmse": 12.839745410962621
+      },
+      "5": {
+        "mae": 7.5134542799858695,
+        "rmse": 11.741083174899558
+      },
+      "6": {
+        "mae": 7.294348268599047,
+        "rmse": 11.217533882074914
+      },
+      "7": {
+        "mae": 7.167586766732116,
+        "rmse": 11.10843513507585
+      },
+      "8": {
+        "mae": 7.1020675501293296,
+        "rmse": 11.074371847965853
+      },
+      "9": {
+        "mae": 7.133544806024316,
+        "rmse": 11.300228221766895
+      },
+      "10": {
+        "mae": 7.221667358494318,
+        "rmse": 11.525173718573587
+      }
+    },
+    "timexer_proxy": {
+      "1": {
+        "mae": 3.1891980741581927,
+        "rmse": 5.334531723784068
+      },
+      "2": {
+        "mae": 3.2946919824362793,
+        "rmse": 5.56577193669172
+      },
+      "3": {
+        "mae": 3.9196643825216406,
+        "rmse": 6.147922512140287
+      },
+      "4": {
+        "mae": 3.7466958527535525,
+        "rmse": 5.794974037385293
+      },
+      "5": {
+        "mae": 4.274631293263367,
+        "rmse": 6.415761343160953
+      },
+      "6": {
+        "mae": 4.511078162902481,
+        "rmse": 6.837964113994794
+      },
+      "7": {
+        "mae": 4.640881158166877,
+        "rmse": 7.042299455863257
+      },
+      "8": {
+        "mae": 4.444053484280052,
+        "rmse": 6.621307583032224
+      },
+      "9": {
+        "mae": 4.470808669190812,
+        "rmse": 6.75966911352628
+      },
+      "10": {
+        "mae": 4.779693082020482,
+        "rmse": 7.2049354433534445
+      }
+    },
+    "tft_proxy": {
+      "1": {
+        "mae": 9.695870792728124,
+        "rmse": 17.64846840287753
+      },
+      "2": {
+        "mae": 10.87895872071569,
+        "rmse": 18.926429386938153
+      },
+      "3": {
+        "mae": 7.5446038873919,
+        "rmse": 13.402459059433093
+      },
+      "4": {
+        "mae": 5.712338839283564,
+        "rmse": 9.081546797788933
+      },
+      "5": {
+        "mae": 5.405093678848945,
+        "rmse": 8.199303409499441
+      },
+      "6": {
+        "mae": 5.430947394277351,
+        "rmse": 8.178961981500981
+      },
+      "7": {
+        "mae": 5.507081196123803,
+        "rmse": 8.358581676379968
+      },
+      "8": {
+        "mae": 5.609789092503383,
+        "rmse": 8.646047536520992
+      },
+      "9": {
+        "mae": 5.750449260345903,
+        "rmse": 9.057641794761386
+      },
+      "10": {
+        "mae": 5.935313107736845,
+        "rmse": 9.529768775370535
+      }
+    }
+  },
+  "notes": [
+    "Exact source formula for blend_best_chronos_groupwise_main.csv is not present in coding.ipynb.",
+    "Runtime latest_lb is expected to use Chronos real + real GRU + TSMixerx real when those artifacts are present.",
+    "Chronos proxy and TimeXer proxy remain reproducible fallbacks when real artifacts are unavailable.",
+    "Decision layer is productized as Slot Pressure Engine + Action Engine with configurable service modes."
+  ]
+}
