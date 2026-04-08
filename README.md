@@ -1,89 +1,71 @@
 # WildHack Slot-based Warehouse Load Orchestrator
 
-Production-like сервис для хакатонного кейса WildHack. Система не просто прогнозирует отгрузки, а помогает складу принимать операционные решения по временным слотам:
+Операционный сервис для склада, который не просто прогнозирует нагрузку, а помогает принять действие по маршрутам в ближайшие временные слоты.
 
-`Входные данные -> Forecast Ensemble -> Slot Pressure Engine -> Action Engine -> Decision Package`
+Коротко:
 
-На выходе сервис возвращает не только прогноз, но и:
+- принимает входные данные в формате `json / csv / parquet`
+- прогнозирует `target_2h` на горизонте `10` шагов по `30` минут
+- оценивает `slot pressure`
+- рекомендует действие: `call_now / monitor / hold`
+- рассчитывает число машин и срочность
+- объясняет, почему система предлагает именно это решение
 
-- уровень slot pressure
-- рекомендуемое действие: `call_now | monitor | hold`
-- рекомендуемое число машин
-- срочность
-- объяснение, почему принято именно такое решение
+Продуктовый поток:
 
-## Что решает сервис
+`Input data -> Forecast Ensemble -> Slot Pressure Engine -> Action Engine -> Decision Package`
+
+---
+
+## Публичная ссылка на сервис
+
+После деплоя добавьте сюда публичную ссылку:
+
+- `Сервис: <ДОБАВЬТЕ_ПУБЛИЧНУЮ_ССЫЛКУ_НА_UI>`
+- `Swagger: <ДОБАВЬТЕ_ПУБЛИЧНУЮ_ССЫЛКУ_НА_/docs>`
+
+---
+
+## Ссылка на веса и inference bundle
+
+Готовый набор артефактов для инференса:
+
+- `https://drive.google.com/drive/folders/1eCMotnRsqOYSVd-BhQEX-ZgewIeNJwwn?usp=sharing`
+
+В облаке уже лежат нужные папки:
+
+- `artifacts/configs`
+- `artifacts/models`
+- `artifacts/stats`
+
+Этого достаточно для запуска текущего runtime-пайплайна сервиса.
+
+---
+
+## Что делает сервис
 
 Контекст задачи:
 
 - есть маршруты `route_id`
 - по ним во времени меняется поток отгрузок
-- если заранее не увидеть пик нагрузки, склад может перегрузиться или, наоборот, вызвать лишний транспорт
+- если не увидеть пик нагрузки заранее, склад может перегрузиться или вызвать лишний транспорт
 
 Что предсказываем:
 
-- `target_2h` на горизонте `10` шагов по `30` минут
-- это ожидаемая нагрузка в ближайшие 2 часа для каждого будущего слота
+- `target_2h` на горизонте `10` будущих слотов
+- это ожидаемая нагрузка в ближайшие 2 часа для каждого будущего временного окна
 
-Что делает сервис поверх прогноза:
+Что делает система поверх прогноза:
 
 - считает `slot pressure`
-- оценивает риск
+- оценивает риск по маршруту
 - рекомендует действие
 - рассчитывает число машин
-- формирует понятный decision package для маршрута/склада
+- возвращает структурированный decision package для склада
 
-## Что реально использует runtime
+---
 
-Основной runtime-профиль: `latest_lb`.
-
-В нём сервис использует:
-
-- `Chronos2` real, если лежат экспортированные веса
-- `GRU` real
-- `TSMixerx` real, если лежит обученный bundle
-- fallback на proxy-ветки, если real-артефакты недоступны
-
-Дополнительный профиль: `local_fallback`.
-
-В нём сервис использует:
-
-- `GRU`
-- `TFT proxy`
-- optional `Optuna` models
-
-## Структура сервиса
-
-Ключевые модули:
-
-- `app/core/slot_pressure.py` — расчёт напряжения склада по слотам
-- `app/core/action_engine.py` — выбор `call_now / monitor / hold`
-- `app/core/decision_logic.py` — сборка decision package
-- `app/core/kpi.py` — продуктовые KPI
-- `app/core/loaders.py` — загрузка артефактов и моделей
-- `app/core/forecasting.py` — runtime inference по моделям
-
-## Форматы входных данных
-
-Сервис принимает:
-
-- `JSON`
-- `CSV`
-- `Parquet`
-
-Поддерживается хакатонный тестовый формат:
-
-- `id`
-- `route_id`
-- `timestamp`
-
-Если в файле нет служебных параметров сервиса, он подставит их сам:
-
-- `model_profile = latest_lb`
-- `horizon_steps = 10`
-- `service_mode = balanced`
-
-## Быстрый запуск
+## Быстрый запуск локально
 
 ### 1. Установить зависимости
 
@@ -103,47 +85,157 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 - Swagger: `http://127.0.0.1:8000/docs`
 - Health: `http://127.0.0.1:8000/health`
 
-### 3. Docker
+### 3. Быстрая проверка
+
+Откройте UI и:
+
+1. нажмите `Загрузить демо`
+2. либо выберите `parquet/csv/json`
+3. нажмите `Запустить расчёт`
+
+---
+
+## Запуск через Docker
+
+### Локально
+
+```bash
+docker compose up --build
+```
+
+или
 
 ```bash
 docker build -t wildhack-slot-orchestrator .
 docker run --rm -p 8000:8000 wildhack-slot-orchestrator
 ```
 
-или
+### На сервере
+
+Самый простой сценарий:
 
 ```bash
-docker compose up --build
+git clone <repo_url>
+cd wb_hack
+docker compose up -d --build
 ```
 
-## Как пользоваться UI
+Если папки `artifacts/` рядом с проектом нет, контейнер может автоматически подтянуть артефакты по ссылке Google Drive через `ARTIFACTS_GDRIVE_URL`.
 
-Главный экран разбит на 3 зоны:
+Полезные команды:
+
+```bash
+docker compose ps
+docker compose logs -f
+curl http://127.0.0.1:8000/health
+```
+
+---
+
+## Как пользоваться интерфейсом
+
+Интерфейс построен как clean operations console и разбит на 3 основные зоны:
 
 - слева — `Панель управления`
 - в центре — `Приоритетное решение`
 - справа — `Очередь действий`
 
-Ниже:
+Ниже находятся:
 
 - таблица всех маршрутов
-- маршрут в фокусе
+- блок `Маршрут в фокусе`
 - KPI и бизнес-инсайты
 
-### Кнопки и элементы управления
+### Панель управления
 
-#### `Загрузить демо`
+Здесь находятся:
 
-Подставляет готовый demo batch и сразу запускает расчёт. Удобно для защиты и быстрой проверки UI.
+- выбор `режима сервиса`
+- кнопка `Загрузить демо`
+- кнопка `Запустить расчёт`
+- загрузка файла `json / csv / parquet`
+- краткая сводка по входным данным
+- `Расширенный ввод` с JSON
 
-#### `Запустить расчёт`
+### Что важно на экране
+
+#### KPI-полоса сверху
+
+Показывает:
+
+- сколько критических маршрутов
+- сколько машин нужно вызвать сейчас
+- среднюю нагрузку
+- ближайшее пиковое окно
+- текущий режим сервиса
+- риск SLA
+
+#### Приоритетное решение
+
+Главная карточка экрана. Показывает:
+
+- ключевой маршрут
+- действие, которое нужно выполнить первым
+- pressure level
+- пик через X минут
+- число машин
+- мини-график прогноза
+- основные факторы, повлиявшие на решение
+
+#### Очередь действий
+
+Краткий операционный список по маршрутам:
+
+- маршрут
+- action
+- trucks
+- urgency
+- pressure
+- следующее действие / review / dispatch timing
+
+#### Все маршруты
+
+Таблица даёт обзор всего батча:
+
+- action
+- уровень давления
+- объём
+- trucks
+- urgency
+- следующее действие
+- краткую причину
+
+Клик по строке переводит маршрут в блок `Маршрут в фокусе`.
+
+#### Маршрут в фокусе
+
+Это drill-down карточка маршрута:
+
+- action
+- pressure
+- peak
+- trucks
+- следующее действие
+- объяснение
+- риск-факторы
+- прогноз на 10 шагов
+
+---
+
+## Какие кнопки есть в UI
+
+### `Загрузить демо`
+
+Подставляет готовый demo-сценарий и сразу запускает расчёт. Это самый быстрый способ показать сервис на защите.
+
+### `Запустить расчёт`
 
 Запускает расчёт:
 
-- по выбранному файлу, если файл загружен
-- по JSON из блока `Расширенный ввод`, если файл не выбран
+- по загруженному файлу, если файл выбран
+- по JSON, если файл не выбран
 
-#### `Загрузить файл`
+### `Загрузить файл`
 
 Поддерживает:
 
@@ -151,14 +243,19 @@ docker compose up --build
 - `.csv`
 - `.parquet`
 
-Рекомендуемый сценарий для показа:
+Сервис понимает и хакатонный тестовый формат:
 
-1. открыть UI
-2. выбрать `balanced`
-3. загрузить `Parquet`
-4. нажать `Запустить расчёт`
+- `id`
+- `route_id`
+- `timestamp`
 
-#### `Режим сервиса`
+Если служебные параметры отсутствуют, сервис добавляет их сам:
+
+- `model_profile = latest_lb`
+- `horizon_steps = 10`
+- `service_mode = balanced`
+
+### `Режим сервиса`
 
 Поддерживаются режимы:
 
@@ -168,244 +265,154 @@ docker compose up --build
 
 Они реально влияют на:
 
-- sensitivity к pressure
+- чувствительность к нагрузке
 - safety buffer
-- пороги `monitor` / `call_now`
+- пороги `monitor / call_now`
 - срочность решения
 
-### Что смотреть на экране в первую очередь
+---
 
-#### Верхняя KPI-полоса
+## Модели и runtime-профили
 
-Показывает:
+Основной профиль: `latest_lb`.
 
-- сколько критических маршрутов
-- сколько машин нужно вызвать сейчас
-- среднюю нагрузку
-- ближайшее пиковое окно
-- активный режим сервиса
-- риск SLA
+Он использует:
 
-#### `Приоритетное решение`
+- `Chronos2` real, если лежат реальные артефакты
+- `GRU` real
+- `TSMixerx` real, если лежит обученный bundle
+- fallback на proxy-ветки, если heavy artifacts недоступны
 
-Это главный маршрут, которому нужно внимание сейчас.
+Fallback-профиль: `local_fallback`.
 
-Показывает:
+Он использует:
 
-- маршрут и склад
-- action
-- pressure level
-- пик через X минут
-- число машин
-- why / factors
-- мини-график прогноза на 10 шагов
+- `GRU`
+- `TFT proxy`
+- optional `Optuna`
 
-#### `Очередь действий`
+---
 
-Краткий operational view по ключевым маршрутам:
+## Технические преимущества
 
-- action
-- trucks
+### 1. Production-like inference
+
+Сервис не обучает модели в runtime. Он:
+
+- загружает готовые артефакты
+- делает inference
+- собирает blend
+- передаёт прогноз в pressure/action слой
+
+### 2. Настоящий decision engine, а не просто forecast API
+
+После прогноза сервис принимает продуктово полезное решение:
+
+- `call_now`
+- `monitor`
+- `hold`
+
+То есть система отвечает не только на вопрос “сколько будет нагрузки”, но и на вопрос “что делать прямо сейчас”.
+
+### 3. Slot Pressure Engine
+
+Pressure считается на основе реальных факторов:
+
+- near-term peak
+- peak proximity
+- route volatility
+- model disagreement
+- friday regime
+- service mode
+
+### 4. Action Engine
+
+Решение не строится по одному тупому порогу. Учитываются:
+
+- pressure score
 - urgency
-- pressure
-- следующее действие / момент review
+- буфер
+- близость пика
+- ожидаемая нагрузка
+- режим сервиса
 
-#### `Все маршруты`
+### 5. Понятный для бизнеса интерфейс
 
-Обзор всех маршрутов в запросе:
+UI сделан не как технодемо, а как operational console:
 
-- action
-- pressure
-- объём
-- trucks
-- urgency
-- короткая причина
+- KPI summary
+- priority route decision
+- action queue
+- routes overview
+- drill-down по маршруту
 
-Клик по строке переводит маршрут в нижний блок `Маршрут в фокусе`.
+### 6. Готовность к серверному деплою
 
-#### `Маршрут в фокусе`
+В репозитории уже есть:
 
-Детальная карточка маршрута:
+- `Dockerfile`
+- `docker-compose.yml`
+- bootstrap загрузки артефактов
+- healthcheck
+- конфиги runtime
 
-- action
-- pressure
-- peak
-- trucks
-- следующее действие
-- explanation
-- факторы риска
-- прогноз на 10 шагов
+---
 
-## Важные API ручки
+## Архитектура проекта
 
-- `GET /health` — готовность сервиса и профилей
-- `GET /config` — конфиг runtime и бизнес-правил
-- `POST /predict` — только прогноз
-- `POST /plan` — полный decision package
-- `POST /explain` — объяснение по маршрутам
-- `POST /kpi` — KPI snapshot
-- `POST /plan/file` — расчёт напрямую по файлу
+Ключевые модули:
 
-## Команды для проверки
+- `app/core/forecasting.py` — inference по моделям
+- `app/core/slot_pressure.py` — расчёт slot pressure
+- `app/core/action_engine.py` — action recommendation
+- `app/core/decision_logic.py` — сборка decision package
+- `app/core/kpi.py` — KPI layer
+- `app/core/loaders.py` — загрузка артефактов и моделей
+- `app/core/file_payloads.py` — загрузка и валидация `json/csv/parquet`
+
+Конфиги и артефакты:
+
+- `artifacts/configs/`
+- `artifacts/models/`
+- `artifacts/stats/`
+
+Документация:
+
+- `docs/architecture.md`
+- `docs/business_logic.md`
+- `docs/metrics.md`
+- `docs/assumptions.md`
+- `docs/demo.md`
+
+---
+
+## Полезные команды
+
+Проверка моделей:
 
 ```bash
 python scripts/validate_models.py
+```
+
+Проверка submission-like pipeline:
+
+```bash
 python scripts/make_submission.py --profile latest_lb
+```
+
+Тесты:
+
+```bash
 python -m pytest -q
 ```
 
-## Откуда брать веса моделей
-
-Ниже перечислены файлы, которые нужны для inference.
-
-### Вариант 1. Рекомендуемый пакет для `latest_lb`
-
-Это лучший вариант для демонстрации и защиты. В него входят real runtime-модели:
-
-- `artifacts/models/chronos2/model.safetensors`
-- `artifacts/models/chronos2/config.json`
-- `artifacts/models/chronos2/chronos2_config.json`
-- `artifacts/models/chronos2/export_metadata.json`
-- `artifacts/models/gru/gru.pt`
-- `artifacts/models/gru/gru_config.json`
-- `artifacts/models/tsmixerx/tsmixerx_config.json`
-- `artifacts/models/tsmixerx/static_features.parquet`
-- `artifacts/models/tsmixerx/bundle/TSMixerx_0.ckpt`
-- `artifacts/models/tsmixerx/bundle/configuration.pkl`
-- `artifacts/models/tsmixerx/bundle/alias_to_model.pkl`
-
-### Вариант 2. Fallback-файлы, которые лучше тоже положить
-
-Если хотите, чтобы сервис поднимался даже без real heavy artifacts:
-
-- `artifacts/models/chronos_proxy/chronos_proxy.npz`
-- `artifacts/models/chronos_proxy/chronos_proxy_meta.json`
-- `artifacts/models/timexer_proxy/timexer_proxy.npz`
-- `artifacts/models/timexer_proxy/timexer_proxy_meta.json`
-- `artifacts/models/tft_lite/tft_lite.npz`
-- `artifacts/models/tft_lite/tft_lite_meta.json`
-
-### Что ещё нужно кроме весов
-
-Для inference нужны не только веса, но и сопутствующие артефакты:
-
-#### Конфиги
-
-- `artifacts/configs/model_registry.json`
-- `artifacts/configs/blend_config.json`
-- `artifacts/configs/business_rules.yaml`
-- `artifacts/configs/preprocessing.json`
-
-#### Статистики и history tail
-
-- `artifacts/stats/route_stats.parquet`
-- `artifacts/stats/office_stats.parquet`
-- `artifacts/stats/route_office_map.parquet`
-- `artifacts/stats/history_tail.parquet`
-- `artifacts/stats/route_time_profiles.parquet`
-- `artifacts/stats/office_time_profiles.parquet`
-- `artifacts/stats/global_time_profiles.parquet`
-- `artifacts/stats/status_route_friday_profiles.parquet`
-
-### Практическая рекомендация
-
-Чтобы не собирать inference-пакет вручную, лучше залить в облако целиком такие папки:
-
-- `artifacts/models/chronos2/`
-- `artifacts/models/gru/`
-- `artifacts/models/tsmixerx/`
-- `artifacts/configs/`
-- `artifacts/stats/`
-
-И опционально:
-
-- `artifacts/models/chronos_proxy/`
-- `artifacts/models/timexer_proxy/`
-- `artifacts/models/tft_lite/`
-
-## Ссылка на скачивание весов
-
-Готовая ссылка на inference bundle:
-
-- `https://drive.google.com/drive/folders/1eCMotnRsqOYSVd-BhQEX-ZgewIeNJwwn?usp=sharing`
-
-В папке лежат:
-
-- `artifacts/configs`
-- `artifacts/models`
-- `artifacts/stats`
-
-Этого достаточно для запуска текущего runtime.
-
-## Какие файлы лучше положить в облако
-
-Если нужен один понятный архив для запуска сервиса, лучше сделать архив:
-
-- `wildhack_inference_bundle.zip`
-
-Внутри:
-
-- `artifacts/models/chronos2/`
-- `artifacts/models/gru/`
-- `artifacts/models/tsmixerx/`
-- `artifacts/configs/`
-- `artifacts/stats/`
-
-И отдельный optional архив:
-
-- `wildhack_fallback_models.zip`
-
-Внутри:
-
-- `artifacts/models/chronos_proxy/`
-- `artifacts/models/timexer_proxy/`
-- `artifacts/models/tft_lite/`
-
-## Запуск на сервере через Docker
-
-### Вариант 1. Самый простой
-
-Если рядом с репозиторием уже есть папка `artifacts`, просто выполните:
+Bootstrap артефактов:
 
 ```bash
-docker compose up -d --build
+python scripts/bootstrap_runtime.py
 ```
 
-### Вариант 2. Если артефактов на сервере ещё нет
-
-Контейнер умеет сам подтянуть их из Google Drive по переменной:
-
-- `ARTIFACTS_GDRIVE_URL`
-
-В `docker-compose.yml` ссылка уже прописана. То есть на сервере достаточно:
-
-```bash
-git clone <repo_url>
-cd wb_hack
-docker compose up -d --build
-```
-
-При первом запуске сервис скачает `artifacts/configs`, `artifacts/models` и `artifacts/stats`, сохранит их в `./artifacts` и затем поднимет API.
-
-### Полезные команды на сервере
-
-Статус контейнера:
-
-```bash
-docker compose ps
-```
-
-Логи:
-
-```bash
-docker compose logs -f
-```
-
-Проверка health:
-
-```bash
-curl http://127.0.0.1:8000/health
-```
+---
 
 ## Проверенный demo-файл
 
@@ -413,22 +420,29 @@ curl http://127.0.0.1:8000/health
 
 - `examples/test_first_100_routes.parquet`
 
-Это укороченная версия хакатонного `test.parquet`:
+Это укороченная версия тестового файла:
 
 - 100 маршрутов
 - 1000 строк
-- тот же формат входа
+- тот же входной формат, что и у исходного `test.parquet`
+
+---
 
 ## Ограничения
 
 - `blend_best_chronos_groupwise_main.csv` сохранён как frozen reference, а не как точно восстановленная формула
-- KPI layer — честная proxy-реализация, потому что production dispatch logs в исходных данных отсутствуют
-- proxy-модели остаются в репозитории как fallback runtime path
+- KPI layer является честной proxy-реализацией, потому что production dispatch logs в исходных данных отсутствуют
+- proxy-модели сохранены как fallback-runtime path на случай отсутствия heavy artifacts
 
-## Документация
+---
 
-- `docs/architecture.md`
-- `docs/business_logic.md`
-- `docs/metrics.md`
-- `docs/assumptions.md`
-- `docs/demo.md`
+## Куда смотреть в коде
+
+- `app/main.py`
+- `app/api/routes.py`
+- `app/core/forecasting.py`
+- `app/core/slot_pressure.py`
+- `app/core/action_engine.py`
+- `app/core/decision_logic.py`
+- `app/core/kpi.py`
+
