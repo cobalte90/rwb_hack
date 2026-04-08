@@ -16,7 +16,8 @@
 `Input data -> Forecast Ensemble -> Slot Pressure Engine -> Action Engine -> Decision Package`   
 
 ---
-# ССЫЛКА НА СЕРВИС: http://85.239.60.13:8000
+# ССЫЛКА НА СЕРВИС: http://85.239.60.13:8000   
+может не сработать без vpn из-за временного хостинга
 ---
 
 ## Что внутри
