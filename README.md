@@ -343,7 +343,7 @@ docker compose exec transport-planner python -c "import importlib.util; print('c
 - есть путь к запуску на реальных `Chronos2` и `TSMixerx` 🚀
 
 ---
-# ССЫЛКА НА СЕРВИС: http://85.239.60.13:8000    
+Публичная ссылка на сервис: http://85.239.60.13:8000    
 ---   
 (может понадобиться vpn для тестирования из-за временного хостинга)
 
