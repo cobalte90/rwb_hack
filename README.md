@@ -15,11 +15,6 @@
 
 `Input data -> Forecast Ensemble -> Slot Pressure Engine -> Action Engine -> Decision Package`   
 
----
-# ССЫЛКА НА СЕРВИС: http://85.239.60.13:8000   
-может не сработать без vpn из-за временного хостинга
----
-
 ## Что внутри
 
 Основной профиль `latest_lb` использует:
@@ -346,3 +341,9 @@ docker compose exec transport-planner python -c "import importlib.util; print('c
 - есть demo payload
 - есть fallback-runtime
 - есть путь к запуску на реальных `Chronos2` и `TSMixerx` 🚀
+
+---
+# ССЫЛКА НА СЕРВИС: http://85.239.60.13:8000    
+---   
+(может понадобиться vpn для тестирования из-за временного хостинга)
+
