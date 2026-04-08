@@ -67,13 +67,25 @@
 
 ## Быстрый запуск локально
 
-### 1. Установить зависимости
+### 1. Скачать артефакты в корень проекта
+
+Сразу после клонирования репозитория скачайте папку `artifacts` по ссылке и положите её в корень проекта.
+
+Должно получиться так:
+
+- `./artifacts/configs`
+- `./artifacts/models`
+- `./artifacts/stats`
+
+Без этой папки inference-сервис не запустится.
+
+### 2. Установить зависимости
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Запустить сервис
+### 3. Запустить сервис
 
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port 8000
@@ -85,7 +97,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 - Swagger: `http://127.0.0.1:8000/docs`
 - Health: `http://127.0.0.1:8000/health`
 
-### 3. Быстрая проверка
+### 4. Быстрая проверка
 
 Откройте UI и:
 
@@ -98,6 +110,8 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 ## Запуск через Docker
 
 ### Локально
+
+Перед запуском через Docker папка `artifacts/` уже должна лежать рядом с проектом.
 
 ```bash
 docker compose up --build
@@ -117,10 +131,17 @@ docker run --rm -p 8000:8000 wildhack-slot-orchestrator
 ```bash
 git clone <repo_url>
 cd wb_hack
+mkdir artifacts
+# скачайте и распакуйте содержимое Google Drive так,
+# чтобы внутри были artifacts/configs, artifacts/models, artifacts/stats
 docker compose up -d --build
 ```
 
-Если папки `artifacts/` рядом с проектом нет, контейнер может автоматически подтянуть артефакты по ссылке Google Drive через `ARTIFACTS_GDRIVE_URL`.
+Важно:
+
+- папка `artifacts/` должна лежать в корне репозитория
+- внутри должны быть `configs`, `models`, `stats`
+- контейнер не должен рассчитывать на автоматическое скачивание весов при старте
 
 Полезные команды:
 
@@ -352,7 +373,6 @@ UI сделан не как технодемо, а как operational console:
 
 - `Dockerfile`
 - `docker-compose.yml`
-- bootstrap загрузки артефактов
 - healthcheck
 - конфиги runtime
 
@@ -406,14 +426,6 @@ python scripts/make_submission.py --profile latest_lb
 python -m pytest -q
 ```
 
-Bootstrap артефактов:
-
-```bash
-python scripts/bootstrap_runtime.py
-```
-
----
-
 ## Проверенный demo-файл
 
 Для быстрой демонстрации удобно использовать:
@@ -445,4 +457,3 @@ python scripts/bootstrap_runtime.py
 - `app/core/action_engine.py`
 - `app/core/decision_logic.py`
 - `app/core/kpi.py`
-
