@@ -14,7 +14,8 @@
 Продуктовый поток:
 
 `Input data -> Forecast Ensemble -> Slot Pressure Engine -> Action Engine -> Decision Package`
-
+---
+# ССЫЛКА НА СЕРВИС: http://85.239.60.13:8000
 ---
 
 ## Что внутри
